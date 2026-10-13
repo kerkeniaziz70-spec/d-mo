@@ -62,6 +62,7 @@ Paiement : à la livraison ou par carte bancaire.`,
     }
     const ver = $("s-verified"); ver.checked = S.verified;
     ver.addEventListener("change", () => { S.verified = ver.checked; save(); applyHeader(); });
+    $("s-photo-btn").addEventListener("click", () => $("s-photo").click());
     $("s-photo").addEventListener("change", (e) => {
       const f = e.target.files[0]; if (!f) return;
       const img = new Image();
@@ -75,7 +76,12 @@ Paiement : à la livraison ou par carte bancaire.`,
     });
     $("s-apply").addEventListener("click", start);
     $("s-wipe").addEventListener("click", () => {
-      if (!confirm("Tout remettre par défaut ? La clé API sera aussi effacée.")) return;
+      const b = $("s-wipe");
+      if (!b.dataset.sure) {
+        b.dataset.sure = "1"; b.textContent = "Confirmer : tout effacer (clé API incluse)";
+        setTimeout(() => { delete b.dataset.sure; b.textContent = "Tout effacer (valeurs par défaut)"; }, 4000);
+        return;
+      }
       try { localStorage.removeItem(STORE); } catch {}
       location.reload();
     });
