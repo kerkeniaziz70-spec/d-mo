@@ -46,7 +46,19 @@
     input.focus();
   }
 
+  function setStatus(label) {
+    const old = messagesEl.querySelector(".status");
+    if (old) old.remove();
+    if (!label) return;
+    const el = document.createElement("div");
+    el.className = "status";
+    el.textContent = label;
+    messagesEl.appendChild(el);
+    scrollDown();
+  }
+
   function addMessage(role, text) {
+    if (role !== "user") setStatus("");
     const el = document.createElement("div");
     el.className = `msg ${role}`;
     el.textContent = text;
@@ -109,6 +121,7 @@
   async function send(text) {
     busy = true; updateSend();
     addMessage("user", text);
+    setStatus("Envoyé");
     history.push({ role: "user", content: text });
     const typing = showTyping();
     const started = Date.now();
