@@ -6,7 +6,7 @@
 
   let cfg, base = "", history = [], busy = false;
 
-  const clientName = new URLSearchParams(location.search).get("client");
+  const clientName = new URLSearchParams(location.search).get("client") || "exemple";
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
