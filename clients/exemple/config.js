@@ -23,6 +23,9 @@ Ton : chaleureux, professionnel, phrases courtes, quelques emojis maximum.
 Contact humain : contact@boutique-exemple.com ou +216 00 000 000.
 `,
 
+  // Heure affichée dans la barre d'état du téléphone : "23:45" (l'agent répond même la nuit) ou "auto" (heure réelle)
+  heure: "23:45",
+
   // Modèle Claude utilisé
   modele: "claude-haiku-5-5",
 };

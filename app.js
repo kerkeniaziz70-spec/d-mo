@@ -30,9 +30,18 @@
     document.title = cfg.compteInstagram;
     $("account").textContent = cfg.compteInstagram;
     $("avatar").textContent = cfg.initiales;
+    setClock();
     chat.hidden = false;
     $("reset").addEventListener("click", start);
     start();
+  }
+
+  function setClock() {
+    const h = cfg.heure ?? "23:45";
+    const clock = $("clock");
+    const tick = () => { clock.textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
+    if (h === "auto") { tick(); setInterval(tick, 10000); }
+    else clock.textContent = h;
   }
 
   function showNotFound() { notfound.hidden = false; }
