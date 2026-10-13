@@ -1,56 +1,94 @@
 (() => {
   const API_URL = "https://api.anthropic.com/v1/messages";
   const $ = (id) => document.getElementById(id);
-  const chat = $("chat"), notfound = $("notfound"), messagesEl = $("messages");
+  const messagesEl = $("messages");
   const form = $("form"), input = $("input"), sendBtn = $("send");
 
-  let cfg, base = "", history = [], busy = false;
+  const DEFAULTS = {
+    key: "", model: "claude-haiku-5-5",
+    handle: "boutique.exemple", subname: "Boutique Exemple", photo: "", verified: true,
+    clock: "23:45", company: "Boutique Exemple",
+    welcome: "Bonjour 👋 Bienvenue chez Boutique Exemple ! Comment puis-je vous aider ?",
+    instr: `Tu es l'assistant Instagram de Boutique Exemple.
+Ton rôle : accueillir les clients, répondre à leurs questions et les aider à commander.
+Ton : chaleureux, professionnel, phrases courtes, quelques emojis maximum.
+Contact humain : contact@boutique-exemple.com ou +216 00 000 000.`,
+    base: `## Produits
+- T-shirt coton bio : coloris blanc, noir, bleu ; tailles S à XL.
+- Sweat à capuche : coloris gris, noir ; tailles S à XL.
+- Casquette brodée : taille unique.
 
-  const clientName = new URLSearchParams(location.search).get("client") || "exemple";
+## Prix
+- T-shirt coton bio : 35 DT
+- Sweat à capuche : 80 DT
+- Casquette brodée : 25 DT
+- Livraison : 7 DT, offerte dès 150 DT d'achat.
 
-  function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = src; s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
+## Horaires
+- Lundi au samedi : 9h – 19h
+- Dimanche : fermé
+
+## FAQ
+Délais de livraison : 2 à 4 jours ouvrables partout en Tunisie.
+Échange : possible sous 7 jours, article non porté et dans son emballage.
+Paiement : à la livraison ou par carte bancaire.`,
+  };
+  const STORE = "demo-settings";
+  let S = { ...DEFAULTS }, history = [], busy = false, clockTimer;
+  try { Object.assign(S, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch {}
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch {} }
+
+  const FIELDS = { key: "s-key", model: "s-model", handle: "s-handle", subname: "s-subname", clock: "s-clock", company: "s-company", welcome: "s-welcome", instr: "s-instr", base: "s-base" };
+
+  function applyHeader() {
+    document.title = S.handle || "Démo";
+    $("account").textContent = S.handle;
+    $("subname").textContent = S.subname;
+    $("verified").style.display = S.verified ? "" : "none";
+    const av = $("avatar");
+    if (S.photo) { av.textContent = ""; av.style.backgroundImage = `url(${S.photo})`; av.classList.add("photo"); }
+    else { av.style.backgroundImage = ""; av.classList.remove("photo"); av.textContent = (S.handle || "?").replace(/[^a-z0-9]/gi, "").slice(0, 2); }
+    clearInterval(clockTimer);
+    const clock = $("clock");
+    const tick = () => { clock.textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
+    if ((S.clock || "").trim().toLowerCase() === "auto") { tick(); clockTimer = setInterval(tick, 10000); }
+    else clock.textContent = S.clock || "23:45";
   }
 
-  async function init() {
-    if (!clientName || !/^[a-z0-9_-]+$/i.test(clientName)) return showNotFound();
-    try {
-      await loadScript(`clients/${clientName}/config.js`);
-      const res = await fetch(`clients/${clientName}/base.md`);
-      if (!res.ok) throw new Error("base.md");
-      base = await res.text();
-      cfg = window.CLIENT_CONFIG;
-      if (!cfg) throw new Error("config");
-    } catch { return showNotFound(); }
+  function initPanel() {
+    for (const [k, id] of Object.entries(FIELDS)) {
+      const el = $(id); el.value = S[k];
+      el.addEventListener("input", () => { S[k] = el.value; save(); applyHeader(); });
+    }
+    const ver = $("s-verified"); ver.checked = S.verified;
+    ver.addEventListener("change", () => { S.verified = ver.checked; save(); applyHeader(); });
+    $("s-photo").addEventListener("change", (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas"); c.width = c.height = 128;
+        const m = Math.min(img.width, img.height);
+        c.getContext("2d").drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, 128, 128);
+        S.photo = c.toDataURL("image/jpeg", .85); save(); applyHeader();
+      };
+      img.src = URL.createObjectURL(f);
+    });
+    $("s-apply").addEventListener("click", start);
+    $("gear").addEventListener("click", () => { const p = $("panel"); p.hidden = !p.hidden; });
+  }
 
-    document.title = cfg.compteInstagram;
-    $("account").textContent = cfg.compteInstagram;
-    $("avatar").textContent = cfg.initiales;
-    setClock();
-    chat.hidden = false;
+  function init() {
+    initPanel();
+    applyHeader();
     $("reset").addEventListener("click", start);
     start();
   }
-
-  function setClock() {
-    const h = cfg.heure ?? "23:45";
-    const clock = $("clock");
-    const tick = () => { clock.textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
-    if (h === "auto") { tick(); setInterval(tick, 10000); }
-    else clock.textContent = h;
-  }
-
-  function showNotFound() { notfound.hidden = false; }
 
   function start() {
     history = [];
     busy = false;
     messagesEl.innerHTML = "";
-    if (cfg.messageAccueil) addMessage("agent", cfg.messageAccueil);
+    if (S.welcome) addMessage("agent", S.welcome);
     updateSend();
     input.focus();
   }
@@ -88,9 +126,7 @@
   }
 
   function systemPrompt() {
-    const defaut = cfg.langue === "darija"
-      ? "Langue par défaut : darija tunisienne en arabizi."
-      : "Langue par défaut : français.";
+    const defaut = "Langue par défaut : français.";
     const langue = [
       "LANGUE (obligatoire) : réponds toujours dans la langue et le style du dernier message du client.",
       "- Si le client écrit en darija tunisienne avec des lettres latines et des chiffres (arabizi : 3asslema, t9i9a, su2el, 7aja, ch7al, barcha, behi, yaatik essa7a...), réponds en darija tunisienne arabizi, naturelle, avec les mêmes conventions (3, 7, 9, 5, 8, 2). Reste poli et professionnel, sans argot excessif.",
@@ -100,8 +136,8 @@
       defaut,
     ].join("\n");
     return [
-      `Tu es l'agent de messagerie Instagram de l'entreprise « ${cfg.entreprise} ». Tu discutes par DM avec ses clients.`,
-      cfg.instructions || "",
+      `Tu es l'agent de messagerie Instagram de l'entreprise « ${S.company} ». Tu discutes par DM avec ses clients.`,
+      S.instr || "",
       langue,
       [
         "STYLE (obligatoire) : tu écris comme dans une vraie conversation Instagram DM.",
@@ -114,7 +150,7 @@
       ].join("\n"),
       "RÈGLE ABSOLUE : réponds uniquement à partir de la BASE DE CONNAISSANCES ci-dessous. N'invente jamais un prix, un horaire, un produit ou une politique. Si l'information n'y figure pas, dis que tu vas vérifier et propose de passer par un contact humain.",
       "=== BASE DE CONNAISSANCES ===",
-      base,
+      S.base,
       "=== FIN DE LA BASE ===",
     ].join("\n\n");
   }
@@ -136,18 +172,19 @@
     const started = Date.now();
 
     try {
+      if (!S.key.trim()) throw new Error("Ajoute ta clé API dans les réglages (⚙️).");
       let res;
       try {
         res = await fetch(API_URL, {
           method: "POST",
           headers: {
             "content-type": "application/json",
-            "x-api-key": ANTHROPIC_API_KEY,
+            "x-api-key": S.key.trim(),
             "anthropic-version": "2023-06-01",
             "anthropic-dangerous-direct-browser-access": "true",
           },
           body: JSON.stringify({
-            model: cfg.modele || "claude-haiku-5-5",
+            model: S.model,
             max_tokens: 600,
             system: systemPrompt(),
             messages: history,

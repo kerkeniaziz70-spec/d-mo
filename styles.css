@@ -36,7 +36,7 @@ body {
 .clock { font-size: 15px; font-weight: 600; letter-spacing: .2px; font-variant-numeric: tabular-nums; }
 .sys { display: flex; align-items: center; gap: 6px; }
 .sys svg { fill: currentColor; height: 12px; width: auto; }
-.chat[hidden], .notfound[hidden] { display: none; }
+
 
 .chat-header {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
@@ -106,7 +106,27 @@ textarea::placeholder { color: var(--muted); }
 .send:disabled { display: none; }
 .input-wrap:has(.send:not(:disabled)) .input-icons { display: none; }
 
-.notfound { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 14px; }
+.avatar.photo { background-size: cover; background-position: center; }
+.gear { position: fixed; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #2a2a2d; color: #ddd; display: grid; place-items: center; cursor: pointer; z-index: 20; }
+.gear:hover { background: #38383c; }
+.gear svg { width: 21px; height: 21px; }
+.panel {
+  position: fixed; top: 64px; right: 16px; bottom: 16px; width: 340px; overflow-y: auto; z-index: 20;
+  background: #26262a; color: #eee; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5); font-size: 13px;
+}
+.panel[hidden] { display: none; }
+.panel h2 { font-size: 16px; margin-bottom: 4px; }
+.panel label { display: flex; flex-direction: column; gap: 5px; color: #a0a0a5; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+.panel label.check { flex-direction: row; align-items: center; gap: 8px; text-transform: none; font-size: 13px; color: #eee; }
+.panel small { color: #77777c; font-size: 11px; margin-top: -6px; }
+.panel input:not([type=checkbox]):not([type=file]), .panel select, .panel textarea {
+  font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0; color: #eee; background: #1a1a1d; border: 1px solid #38383c; border-radius: 8px; padding: 8px 10px; outline: 0;
+}
+.panel textarea { resize: vertical; }
+.panel input:focus, .panel select:focus, .panel textarea:focus { border-color: #7b3ff2; }
+.panel .apply { font: inherit; font-weight: 600; border: 0; border-radius: 10px; background: #7b3ff2; color: #fff; padding: 10px; cursor: pointer; flex: none; }
+@media (max-width: 900px) { .gear, .panel { display: none !important; } }
 
 @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
