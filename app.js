@@ -41,7 +41,6 @@ Paiement : à la livraison ou par carte bancaire.`,
   const FIELDS = { key: "s-key", model: "s-model", handle: "s-handle", subname: "s-subname", clock: "s-clock", company: "s-company", welcome: "s-welcome", instr: "s-instr", base: "s-base" };
 
   function applyHeader() {
-    document.title = S.handle || "Démo";
     $("account").textContent = S.handle;
     $("subname").textContent = S.subname;
     $("verified").style.display = S.verified ? "" : "none";
