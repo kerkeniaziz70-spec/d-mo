@@ -12,7 +12,7 @@ window.CLIENT_CONFIG = {
   // Premier message de l'agent, affiché à l'ouverture de la démo
   messageAccueil: "Bonjour 👋 Bienvenue chez Boutique Exemple ! Comment puis-je vous aider ?",
 
-  // Langue : "fr" (français) ou "darija" (darija tunisienne en caractères latins)
+  // Langue par défaut : "fr" ou "darija". L'agent s'adapte de toute façon à la langue du client (français, arabizi, arabe, anglais).
   langue: "fr",
 
   // Instructions de l'agent : rôle, ton, horaires, consignes particulières

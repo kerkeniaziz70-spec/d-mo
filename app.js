@@ -67,9 +67,17 @@
   }
 
   function systemPrompt() {
-    const langue = cfg.langue === "darija"
-      ? "Réponds en darija tunisienne écrite en caractères latins (arabizi), sauf si le client écrit dans une autre langue."
-      : "Réponds en français, sauf si le client écrit clairement dans une autre langue.";
+    const defaut = cfg.langue === "darija"
+      ? "Langue par défaut : darija tunisienne en arabizi."
+      : "Langue par défaut : français.";
+    const langue = [
+      "LANGUE (obligatoire) : réponds toujours dans la langue et le style du dernier message du client.",
+      "- Si le client écrit en darija tunisienne avec des lettres latines et des chiffres (arabizi : 3asslema, t9i9a, su2el, 7aja, ch7al, barcha, behi, yaatik essa7a...), réponds en darija tunisienne arabizi, naturelle, avec les mêmes conventions (3, 7, 9, 5, 8, 2). Reste poli et professionnel, sans argot excessif.",
+      "- Si le client écrit en français, réponds en français. S'il mélange français et darija, fais pareil.",
+      "- Si le client écrit en arabe (alphabet arabe) ou en anglais, réponds dans cette langue.",
+      "- Les noms de produits, les prix et les horaires restent exacts, tels qu'ils figurent dans la base.",
+      defaut,
+    ].join("\n");
     return [
       `Tu es l'agent de messagerie Instagram de l'entreprise « ${cfg.entreprise} ». Tu discutes par DM avec ses clients.`,
       cfg.instructions || "",
