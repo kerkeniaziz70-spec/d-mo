@@ -74,6 +74,11 @@ Paiement : à la livraison ou par carte bancaire.`,
       img.src = URL.createObjectURL(f);
     });
     $("s-apply").addEventListener("click", start);
+    $("s-wipe").addEventListener("click", () => {
+      if (!confirm("Tout remettre par défaut ? La clé API sera aussi effacée.")) return;
+      try { localStorage.removeItem(STORE); } catch {}
+      location.reload();
+    });
     $("gear").addEventListener("click", () => { const p = $("panel"); p.hidden = !p.hidden; });
   }
 
