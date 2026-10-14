@@ -289,3 +289,15 @@ Contact humain : +216 71 000 000.`,
 
   init();
 })();
+
+// Mobile: suit la zone visible (clavier ouvert) pour éviter décalages et zoom
+if (window.visualViewport) {
+  const fit = () => {
+    if (window.innerWidth > 480) { document.querySelector('.phone').style.height = ''; return; }
+    document.querySelector('.phone').style.height = window.visualViewport.height + 'px';
+    window.scrollTo(0, 0);
+  };
+  window.visualViewport.addEventListener('resize', fit);
+  window.visualViewport.addEventListener('scroll', fit);
+  fit();
+}
