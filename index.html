@@ -62,15 +62,32 @@
   </button>
   <aside class="panel" id="panel" hidden>
     <h2>Demo Settings</h2>
-    <label>Clé API Anthropic<input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-..."></label>
-    <small>Stockée uniquement dans ce navigateur.</small>
-    <label>Modèle
-      <select id="s-model">
-        <option value="claude-haiku-5-5">Claude Haiku 5.5 (rapide)</option>
-        <option value="claude-sonnet-5-5">Claude Sonnet 5.5</option>
-        <option value="claude-opus-5-5">Claude Opus 5.5</option>
+    <label>Fournisseur IA
+      <select id="s-provider">
+        <option value="claude">Claude (Anthropic)</option>
+        <option value="gemini">Gemini (Google, gratuit)</option>
       </select>
     </label>
+    <div data-prov="claude">
+      <label>Clé API Claude<input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-..."></label>
+      <label>Modèle
+        <select id="s-model">
+          <option value="claude-haiku-5-5">Claude Haiku 5.5 (rapide)</option>
+          <option value="claude-sonnet-5-5">Claude Sonnet 5.5</option>
+          <option value="claude-opus-5-5">Claude Opus 5.5</option>
+        </select>
+      </label>
+    </div>
+    <div data-prov="gemini" hidden>
+      <label>Clé API Gemini<input id="s-gkey" type="password" autocomplete="off" placeholder="AQ... ou AIza..."></label>
+      <label>Modèle
+        <select id="s-gmodel">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash (rapide)</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+        </select>
+      </label>
+    </div>
+    <small>Clés stockées uniquement dans ce navigateur.</small>
     <label>Pseudo (grand texte en en-tête)<input id="s-handle"></label>
     <label>Nom (petit texte dessous)<input id="s-subname"></label>
     <label>Photo de profil<span class="filebtn"><input id="s-photo" type="file" accept="image/*" hidden><button type="button" id="s-photo-btn">Choisir une photo</button></span></label>

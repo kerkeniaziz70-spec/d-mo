@@ -5,7 +5,7 @@
   const form = $("form"), input = $("input"), sendBtn = $("send");
 
   const DEFAULTS = {
-    key: "", model: "claude-haiku-5-5",
+    provider: "claude", key: "", model: "claude-haiku-5-5", gkey: "", gmodel: "gemini-2.5-flash",
     handle: "boutique.exemple", subname: "Boutique Exemple", photo: "", verified: true,
     clock: "23:45", company: "Boutique Exemple",
     welcome: "Bonjour 👋 Bienvenue chez Boutique Exemple ! Comment puis-je vous aider ?",
@@ -38,7 +38,7 @@ Paiement : à la livraison ou par carte bancaire.`,
   try { Object.assign(S, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch {}
   function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch {} }
 
-  const FIELDS = { key: "s-key", model: "s-model", handle: "s-handle", subname: "s-subname", clock: "s-clock", company: "s-company", welcome: "s-welcome", instr: "s-instr", base: "s-base" };
+  const FIELDS = { provider: "s-provider", key: "s-key", model: "s-model", gkey: "s-gkey", gmodel: "s-gmodel", handle: "s-handle", subname: "s-subname", clock: "s-clock", company: "s-company", welcome: "s-welcome", instr: "s-instr", base: "s-base" };
 
   function applyHeader() {
     $("account").textContent = S.handle;
@@ -54,11 +54,16 @@ Paiement : à la livraison ou par carte bancaire.`,
     else clock.textContent = S.clock || "23:45";
   }
 
+  function showProvider() {
+    document.querySelectorAll("[data-prov]").forEach((d) => { d.hidden = d.dataset.prov !== S.provider; });
+  }
+
   function initPanel() {
     for (const [k, id] of Object.entries(FIELDS)) {
       const el = $(id); el.value = S[k];
-      el.addEventListener("input", () => { S[k] = el.value; save(); applyHeader(); });
+      el.addEventListener("input", () => { S[k] = el.value; save(); applyHeader(); showProvider(); });
     }
+    showProvider();
     const ver = $("s-verified"); ver.checked = S.verified;
     ver.addEventListener("change", () => { S.verified = ver.checked; save(); applyHeader(); });
     $("s-photo-btn").addEventListener("click", () => $("s-photo").click());
@@ -167,7 +172,7 @@ Paiement : à la livraison ou par carte bancaire.`,
 
   function errorMessage(status, type) {
     if (status === 401 || status === 403) return "Clé API invalide ou non autorisée.";
-    if (status === 429 || type === "rate_limit_error") return "Quota ou limite de requêtes dépassé. Réessaie dans un instant.";
+    if (status === 429 || type === "rate_limit_error" || type === "RESOURCE_EXHAUSTED") return "Quota ou limite de requêtes dépassé. Réessaie dans un instant.";
     if (status === 402 || /credit|billing/i.test(type || "")) return "Crédit API insuffisant.";
     if (status >= 500) return "Service momentanément indisponible. Réessaie.";
     return "Une erreur est survenue. Réessaie.";
@@ -182,30 +187,39 @@ Paiement : à la livraison ou par carte bancaire.`,
     const started = Date.now();
 
     try {
-      if (!S.key.trim()) throw new Error("Ajoute ta clé API dans les réglages (⚙️).");
+      const gem = S.provider === "gemini";
+      const key = (gem ? S.gkey : S.key).trim();
+      if (!key) throw new Error(`Ajoute ta clé API ${gem ? "Gemini" : "Claude"} dans les réglages (⚙️).`);
       let res;
       try {
-        res = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-api-key": S.key.trim(),
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true",
-          },
-          body: JSON.stringify({
-            model: S.model,
-            max_tokens: 600,
-            system: systemPrompt(),
-            messages: history,
-          }),
-        });
+        res = gem
+          ? await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.gmodel}:generateContent`, {
+              method: "POST",
+              headers: { "content-type": "application/json", "x-goog-api-key": key },
+              body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemPrompt() }] },
+                contents: history.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+                generationConfig: { maxOutputTokens: 600 },
+              }),
+            })
+          : await fetch(API_URL, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+                "anthropic-dangerous-direct-browser-access": "true",
+              },
+              body: JSON.stringify({ model: S.model, max_tokens: 600, system: systemPrompt(), messages: history }),
+            });
       } catch {
         throw new Error("Problème de connexion. Vérifie ton réseau.");
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(errorMessage(res.status, data?.error?.type));
-      const reply = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+      const reply = gem
+        ? (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("").trim()
+        : (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("").trim();
       if (!reply) throw new Error("Réponse vide. Réessaie.");
 
       const wait = 600 - (Date.now() - started);
