@@ -5,38 +5,57 @@
   const form = $("form"), input = $("input"), sendBtn = $("send");
 
   const DEFAULTS = {
-    provider: "claude", key: "", model: "claude-haiku-5-5", gkey: "", gmodel: "gemini-2.5-flash",
-    handle: "boutique.exemple", subname: "Boutique Exemple", photo: "", verified: true,
-    clock: "23:45", company: "Boutique Exemple",
-    welcome: "Bonjour 👋 Bienvenue chez Boutique Exemple ! Comment puis-je vous aider ?",
-    instr: `Tu es l'assistant Instagram de Boutique Exemple.
-Ton rôle : accueillir les clients, répondre à leurs questions et les aider à commander.
+    provider: "gemini", key: "", model: "claude-haiku-5-5", gkey: "", gmodel: "gemini-2.5-flash",
+    handle: "napoli.tunis", subname: "Pizzeria Napoli", photo: "", verified: true,
+    clock: "auto", company: "Pizzeria Napoli",
+    welcome: "Bonjour 👋 Bienvenue chez Pizzeria Napoli ! Que puis-je faire pour vous ?",
+    instr: `Tu es l'assistant Instagram de Pizzeria Napoli, pizzeria à Tunis (La Marsa).
+Ton rôle : répondre aux questions, prendre les commandes à emporter ou en livraison et les réservations.
 Ton : chaleureux, professionnel, phrases courtes, quelques emojis maximum.
-Contact humain : contact@boutique-exemple.com ou +216 00 000 000.`,
-    base: `## Produits
-- T-shirt coton bio : coloris blanc, noir, bleu ; tailles S à XL.
-- Sweat à capuche : coloris gris, noir ; tailles S à XL.
-- Casquette brodée : taille unique.
+Contact humain : +216 71 000 000.`,
+    base: `## Menu
+- Margherita : 12 DT
+- Reine (jambon, champignons) : 15 DT
+- Quatre fromages : 18 DT
+- Thon et olives : 16 DT
+- Tiramisu : 7 DT
+- Boissons (soda, eau) : 3 DT
 
-## Prix
-- T-shirt coton bio : 35 DT
-- Sweat à capuche : 80 DT
-- Casquette brodée : 25 DT
-- Livraison : 7 DT, offerte dès 150 DT d'achat.
+## Livraison
+- 5 DT, offerte dès 40 DT. Délai : 30 à 45 minutes. Zones : La Marsa, Gammarth, Carthage.
 
 ## Horaires
-- Lundi au samedi : 9h – 19h
-- Dimanche : fermé
+- Tous les jours de 11h30 à 23h00. Fermé le lundi midi.
 
-## FAQ
-Délais de livraison : 2 à 4 jours ouvrables partout en Tunisie.
-Échange : possible sous 7 jours, article non porté et dans son emballage.
-Paiement : à la livraison ou par carte bancaire.`,
+## Réservation
+- Table possible pour 2 à 10 personnes, par message ou par téléphone.
+
+## Paiement
+- Espèces ou carte à la livraison.`,
   };
   const STORE = "demo-settings";
   let S = { ...DEFAULTS }, history = [], busy = false, clockTimer;
   try { Object.assign(S, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch {}
-  function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch {} }
+
+  // Mode démo : config + clé + expiration transportées dans le lien (#d=...), gardées le temps de l'onglet seulement.
+  const DEMO_KEY = "demo-link";
+  const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
+  function loadDemo() {
+    try {
+      const m = location.hash.match(/^#d=(.+)$/);
+      let raw;
+      if (m) { raw = m[1]; sessionStorage.setItem(DEMO_KEY, raw); window.history.replaceState(null, "", location.pathname + location.search); }
+      else raw = sessionStorage.getItem(DEMO_KEY);
+      const d = raw && dec(raw);
+      return d && d.exp ? d : null;
+    } catch { return null; }
+  }
+  const demo = loadDemo();
+  if (demo) { S = { ...DEFAULTS, ...demo.cfg }; document.body.classList.add("demo"); }
+  function save() { if (demo) return; try { localStorage.setItem(STORE, JSON.stringify(S)); } catch {} }
+  function endDemo() { document.body.innerHTML = '<div class="ended">Démo terminée</div>'; }
+  const demoExpired = () => demo && Date.now() > demo.exp;
 
   const FIELDS = { provider: "s-provider", key: "s-key", model: "s-model", gkey: "s-gkey", gmodel: "s-gmodel", handle: "s-handle", subname: "s-subname", clock: "s-clock", company: "s-company", welcome: "s-welcome", instr: "s-instr", base: "s-base" };
 
@@ -79,6 +98,16 @@ Paiement : à la livraison ou par carte bancaire.`,
       img.src = URL.createObjectURL(f);
     });
     $("s-apply").addEventListener("click", start);
+    $("s-link").addEventListener("click", async () => {
+      const cfg = { ...S };
+      delete cfg[S.provider === "gemini" ? "key" : "gkey"]; // ne pas envoyer la clé de l'autre fournisseur
+      const mins = Math.max(1, parseInt($("s-mins").value, 10) || 30);
+      const url = location.href.split("#")[0] + "#d=" + enc({ cfg, exp: Date.now() + mins * 60000 });
+      const b = $("s-link"), label = b.textContent;
+      try { await navigator.clipboard.writeText(url); b.textContent = `Lien copié (valable ${mins} min)`; }
+      catch { prompt("Copie ce lien :", url); }
+      setTimeout(() => { b.textContent = label; }, 3000);
+    });
     $("s-wipe").addEventListener("click", () => {
       const b = $("s-wipe");
       if (!b.dataset.sure) {
@@ -93,6 +122,8 @@ Paiement : à la livraison ou par carte bancaire.`,
   }
 
   function init() {
+    if (demoExpired()) return endDemo();
+    if (demo) setInterval(() => { if (demoExpired()) endDemo(); }, 10000);
     initPanel();
     applyHeader();
     $("reset").addEventListener("click", start);
@@ -179,6 +210,7 @@ Paiement : à la livraison ou par carte bancaire.`,
   }
 
   async function send(text) {
+    if (demoExpired()) return endDemo();
     busy = true; updateSend();
     addMessage("user", text);
     setStatus("Envoyé");
