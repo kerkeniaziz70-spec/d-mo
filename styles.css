@@ -137,7 +137,7 @@ textarea::placeholder { color: var(--muted); }
 
 @media (max-width: 480px) {
   .stage { padding: 0; }
-  .phone { width: 100%; height: 100dvh; max-height: none; border-radius: 0; padding: 0; background: #000; box-shadow: none; }
+  .phone { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; max-height: none; border-radius: 0; padding: 0; background: #000; box-shadow: none; }
   .notch { display: none; }
   .screen { border-radius: 0; }
   .statusbar { display: none; }

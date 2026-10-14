@@ -290,14 +290,16 @@ Contact humain : +216 71 000 000.`,
   init();
 })();
 
-// Mobile: suit la zone visible (clavier ouvert) pour éviter décalages et zoom
+// Mobile: colle le téléphone à la zone réellement visible (clavier ouvert), quel que soit le modèle
 if (window.visualViewport) {
+  const vv = window.visualViewport, phone = document.querySelector('.phone');
   const fit = () => {
-    if (window.innerWidth > 480) { document.querySelector('.phone').style.height = ''; return; }
-    document.querySelector('.phone').style.height = window.visualViewport.height + 'px';
-    window.scrollTo(0, 0);
+    if (window.innerWidth > 480) { phone.style.height = phone.style.top = ''; return; }
+    phone.style.height = vv.height + 'px';
+    phone.style.top = vv.offsetTop + 'px';
   };
-  window.visualViewport.addEventListener('resize', fit);
-  window.visualViewport.addEventListener('scroll', fit);
+  vv.addEventListener('resize', fit);
+  vv.addEventListener('scroll', fit);
+  window.addEventListener('scroll', () => { if (window.innerWidth <= 480) window.scrollTo(0, 0); });
   fit();
 }
